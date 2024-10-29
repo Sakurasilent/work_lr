@@ -20,11 +20,12 @@ class SimHash:
 
     def init_weight(self):
         res = {}
-        with open('data/dict.txt', 'r', encoding='utf-8') as f:
+        with open('C://Users//Donson//Desktop//projects//self//work_lr//sim_hash_self//data//dict.txt', 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 line = line.split()
-                res[line[0]] = res.get(line[0], 1)
+
+                res[line[0]] = res.get(line[0], int(line[1]))
         return res
 
     def segment(self, text: str) -> list:
@@ -98,7 +99,7 @@ class SimHash:
 
 if __name__ == "__main__":
     text1 = '哈哈哈，你妈妈喊你回家吃饭哦，回家罗回家罗'
-    text2 = '哈哈哈，你妈妈叫你回家吃饭啦，回家罗回家罗'
+    text2 = '哈哈哈，你妈妈叫你回家吃饭啦，'
     sh = SimHash()
     encoded1 = sh.encode(text1)  # 进行SimHash编码
     encoded2 = sh.encode(text2)  # 进行SimHash编码
