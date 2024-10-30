@@ -105,6 +105,6 @@ if __name__ == "__main__":
     encoded1 = sh.encode(text1)  # 进行SimHash编码
     encoded2 = sh.encode(text2)  # 进行SimHash编码
     similar = sh.similar(text1, text2, 6)  # 相似度计算，n=3
-    print(encoded1)
+    print(encoded1, len(encoded1))
     print(encoded2)
     print(similar)
