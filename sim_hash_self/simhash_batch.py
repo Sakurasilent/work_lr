@@ -9,28 +9,16 @@
 
 import hashlib
 import jieba
-
+import os
+from utils import init_stopwords
 class SimHash:
     def __init__(self, hash_size=64):
         self.hash_size = hash_size
-        self.weight_dict = self.init_weight()
-        self.tokenizer = jieba.cut
-        self.stopwords = [] #todo 找开源的去停用词
+        # self.weight_dict = self.init_weight()
+        # self.tokenizer = jieba.cut
+        # self.stopwords = init_stopwords()
 
         self.hash_buckets = {}
-
-    def init_weight(self):
-        # todo 词的权重 待做
-        res = {}
-        return res
-
-    def segment(self, text: str) -> list:
-        if not text or len(text.strip()) == 0:
-            return []
-        tokens = self.tokenizer(text)
-        return [word for word in tokens
-                if word not in self.stopwords
-                and len(word.strip()) != 0]
 
     @staticmethod
     def han_hash(text: str, hash_size: int):
@@ -77,16 +65,26 @@ class SimHash:
                 res.append(-weight)
         return res
 
-    def encode(self, text: str) -> str:
-        words = self.segment(text) # jieba 分词
+    def encode(self, 
+            #    text: str,
+                words:list,
+               weight_dict={}
+               ) -> str: 
+        """
+        words:直接传入分好词的list
+        weight_dict: 通过tf-idf计算的每个句子的权重 单独传 每个文本的权重
+        """
+        # words = self.segment(text) # jieba 分词
         code = [0] * self.hash_size
         for word in words:
-            hash_code = self.han_hash(word, self.hash_size)
-            word_weight = self.weight_dict.get(word, 1)
-            weights = self.hash_weight(hash_code, word_weight)
+            hash_code = self.han_hash(word, self.hash_size) # hash
+
+            # word_weight = self.weight_dict.get(word, 1)
+            word_weight = weight_dict.get(word, 1)
+            weights = self.hash_weight(hash_code, word_weight) # 加权
             for i, w in enumerate(weights):
-                code[i] += w
-        for i, c in enumerate(code):
+                code[i] += w  # 合并
+        for i, c in enumerate(code):  # 降维
             if c > 0:
                 code[i] = 1
             else:
@@ -95,7 +93,7 @@ class SimHash:
         return hash_code_result
     def similar(self, t1: str, t2: str, n: int = 3) -> bool:
         """
-        两两比较 海明 距离
+        两两 比较 海明 距离
         :param t1:
         :param t2:
         :param n:
@@ -124,15 +122,13 @@ class SimHash:
         segments = [hash_value[i * 8: (i + 1) * 8] for i in range(8)]
         return segments
 
-    # def init_hash_buckets(self, threshold=3):
-    #     self.hash_buckets = {}
-    #     self.threshold = threshold
 
-    def is_duplicate(self, text, threshold=3):
+    def is_duplicate(self, words, 
+                           weight_dict,
+                           threshold=3):
 
-        # self.threshold = threshold
-        # self.init_hash_buckets(threshold)
-        text_hash = self.encode(text)
+        text_hash = self.encode(words=words,weight_dict=weight_dict)
+        
         hash_segments = self.segment_hash(hash_value=text_hash)
         for bucket_key in hash_segments:
             if bucket_key in self.hash_buckets:
@@ -146,24 +142,36 @@ class SimHash:
                 self.hash_buckets[bucket_key]=[]
             self.hash_buckets[bucket_key].append(text_hash)
         return False
-
+#0010100010001000101000010010010010000011000101100000000000001000
 
 if __name__ == "__main__":
-    # 示例文本数据
-    # '0000000000000000000000110010111011000011100011101010001000101010'
-    # '0000000000000000000000110010111011000011100011101010001000101010'
+    from tf_idf_weight import get_tf_idf
     texts = [
         "天气好，可以去户外活动。",
         "天气好，可以去户外活动。",
         "天气好，可以去户外活动"
     ]
+    tf_idf_weight = get_tf_idf(texts)
+    # pass
+    # exit()
     sh = SimHash()
     unique_texts = []
-    for text in texts:
-        if not sh.is_duplicate(text,threshold=8):
-            unique_texts.append(text)
+
+    for index in range(len(tf_idf_weight)):
+        words = list(tf_idf_weight[index].keys())
+        # weight_dict = list(item.values())
+        if not sh.is_duplicate(words=words, 
+                               weight_dict=tf_idf_weight[index]):
+            unique_texts.append(texts[index])
+    
     for item in unique_texts:
         print(item)
-    pass
+
+    # for text in texts:
+    #     if not sh.is_duplicate(text,threshold=8):
+    #         unique_texts.append(text)
+    # for item in unique_texts:
+    #     print(item)
+    # pass
 
 
